@@ -4,7 +4,16 @@ FROM debian:jessie
 RUN groupadd -r mysql && useradd -r -g mysql mysql
 
 # add gosu for easy step-down from root
-ENV GOSU_VERSION 1.7
+###
+# Change MYSQL_USER, MYSQL_PASSWORD, and MYSQL_DATABASE
+###
+ENV GOSU_VERSION=1.7 \
+    MYSQL_USER=user \
+    MYSQL_PASSWORD=pass \
+    MYSQL_DATABASE=database_name \
+    MYSQL_ROOT_PASSWORD='' \
+    MYSQL_ALLOW_EMPTY_PASSWORD=yes
+
 RUN set -x \
 	&& apt-get update && apt-get install -y --no-install-recommends ca-certificates wget && rm -rf /var/lib/apt/lists/* \
 	&& wget -O /usr/local/bin/gosu "https://github.com/tianon/gosu/releases/download/$GOSU_VERSION/gosu-$(dpkg --print-architecture)" \
@@ -66,8 +75,10 @@ RUN { \
 # don't reverse lookup hostnames, they are usually another container
 	&& echo '[mysqld]\nskip-host-cache\nskip-name-resolve' > /etc/mysql/conf.d/docker.cnf
 
-VOLUME /var/lib/mysql
-
+###
+# CHANGE your_database_dump.sql
+###
+COPY your_database_dump.sql /docker-entrypoint-initdb.d/your_database_dump.sql
 COPY docker-entrypoint.sh /usr/local/bin/
 RUN ln -s usr/local/bin/docker-entrypoint.sh /entrypoint.sh # backwards compat
 ENTRYPOINT ["docker-entrypoint.sh"]
